@@ -11,8 +11,8 @@ image_augmentator = T.Compose([T.RandomAffine(degrees=170, translate=(0, 0.2)),
 
 
 def stack_image_with_spatialgrid(images: torch.Tensor) -> torch.Tensor:
-    us = torch.arange(0, images.shape[-2], 1, dtype=torch.float32, device=images.device)
-    vs = torch.arange(0, images.shape[-1], 1, dtype=torch.float32, device=images.device)
+    us = torch.arange(1, images.shape[-2] + 1, 1, dtype=torch.float32, device=images.device)
+    vs = torch.arange(1, images.shape[-1] + 1, 1, dtype=torch.float32, device=images.device)
     grid = torch.meshgrid(us, vs, indexing='ij')
     spatial_grid = torch.stack(grid)
 
@@ -43,17 +43,12 @@ def augment_images_and_map_correspondence(images: torch.Tensor,
     # Compute correspondence from the spatial grid
     for grid_a, grid_b in zip(grids_a, grids_b):
 
-        valid_pixels_a = torch.where(grid_a.sum(dim=0) != 0.0)
-
-        us = valid_pixels_a[0]
-        vs = valid_pixels_a[1]
-
-        # Reducing computation costs
+        valid_pixels_a = torch.where(grid_a.sum(dim=0) >= 1.0)
+        us, vs = valid_pixels_a[0], valid_pixels_a[1]
         trimming_indices = torch.linspace(0, us.shape[0] - 1, steps=10 * n_correspondence)
-        us = us[trimming_indices.long()].type(torch.float32)
-        vs = vs[trimming_indices.long()].type(torch.float32)
+        us, vs = us[trimming_indices.long()], vs[trimming_indices.long()]
+        valid_pixels_a = torch.vstack([us, vs]).permute(1, 0).type(torch.float32)
 
-        valid_pixels_a = torch.vstack([us, vs]).permute(1, 0)
         valid_grids_a = grid_a[:, us.long(), vs.long()].permute(1, 0)
         tiled_valid_grids_a = valid_grids_a.view(valid_grids_a.shape[0], valid_grids_a.shape[1], 1, 1)
 

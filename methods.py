@@ -59,7 +59,7 @@ def augment_images_and_map_correspondence(images: torch.Tensor,
 
         spatial_grid_distances = torch.linalg.norm(grid_b - tiled_valid_grids_a, dim=1)
 
-        match_indices_a, ubs, vbs = torch.where(spatial_grid_distances <= 0.1)
+        match_indices_a, ubs, vbs = torch.where(spatial_grid_distances == 0.0)
 
         mutual_match_a = valid_pixels_a[match_indices_a.long()]
         mutual_match_b = torch.vstack([ubs, vbs]).permute(1, 0)
